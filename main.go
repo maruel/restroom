@@ -28,11 +28,11 @@ type Tweet struct {
 }
 
 type cache struct {
-	Tweets []Tweet
+	Users map[string][]Tweet
 }
 
 func load() *cache {
-	c := &cache{}
+	c := &cache{Users: map[string][]Tweet{}}
 	f, err := os.Open("restroom.json")
 	if err != nil {
 		return c
@@ -40,6 +40,9 @@ func load() *cache {
 	defer f.Close()
 	d := json.NewDecoder(f)
 	_ = d.Decode(c)
+	if c.Users == nil {
+		c.Users = map[string][]Tweet{}
+	}
 	return c
 }
 
@@ -79,9 +82,9 @@ func (c *cache) fetchMore(user, consumerKey, consumerSecret, token, tokenSecret 
 	first := true
 	ids := map[int64]struct{}{}
 	for i := 0; i < 10; i++ {
-		if len(c.Tweets) != 0 {
+		if len(c.Users[user]) != 0 {
 			// Assumes tweets are in order.
-			m := strconv.FormatInt(c.Tweets[len(c.Tweets)-1].Id-1, 10)
+			m := strconv.FormatInt(c.Users[user][len(c.Users[user])-1].Id-1, 10)
 			log.Printf("using max_id %s", m)
 			v["max_id"] = []string{m}
 		}
@@ -102,7 +105,7 @@ func (c *cache) fetchMore(user, consumerKey, consumerSecret, token, tokenSecret 
 				if err != nil {
 					log.Fatalf("time: %v", err)
 				}
-				c.Tweets = append(c.Tweets, Tweet{t, tweet.Id, tweet.Place.Name})
+				c.Users[user] = append(c.Users[user], Tweet{t, tweet.Id, tweet.Place.Name})
 			}
 		}
 	}
@@ -140,7 +143,7 @@ func mainImpl() error {
 	placesMap := map[string]int{}
 	places := []string{}
 	placesLen := 0
-	for _, t := range c.Tweets {
+	for _, t := range c.Users[*user] {
 		//fmt.Printf("%s %s\n", t.CreatedAt.Format("2006-01-02 15:04:05"), t.Place)
 		hours[t.CreatedAt.Hour()]++
 		weekdays[t.CreatedAt.Weekday()]++
@@ -156,7 +159,7 @@ func mainImpl() error {
 		}
 	}
 	sort.Strings(places)
-	fmt.Printf("Processed %d tweets\n", len(c.Tweets))
+	fmt.Printf("Processed %d tweets\n", len(c.Users[*user]))
 	fmt.Printf("Favorite hour in UTC:\n")
 	for i, s := range hours {
 		fmt.Printf("  %2d: %3d\n", i, s)
