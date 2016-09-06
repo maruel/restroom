@@ -3,3 +3,7 @@
 This stupid app was brought to you by this tweet:
 
 ![](https://raw.githubusercontent.com/wiki/maruel/restroom/toilet_only.png)
+
+## Usage
+
+    restroom -k <consumerkey> -c <consumersecret> -t <token> -s <tokensecret> -u <user> -v

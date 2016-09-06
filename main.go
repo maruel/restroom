@@ -76,12 +76,15 @@ func (c *cache) fetchMore(user, consumerKey, consumerSecret, token, tokenSecret 
 		"include_rts":         {"1"},
 		"screen_name":         {user},
 	}
-	if len(c.Tweets) != 0 {
-		// Assumes tweets are in order.
-		v["max_id"] = []string{strconv.FormatInt(c.Tweets[len(c.Tweets)-1].Id-1, 10)}
-	}
 	first := true
+	ids := map[int64]struct{}{}
 	for i := 0; i < 10; i++ {
+		if len(c.Tweets) != 0 {
+			// Assumes tweets are in order.
+			m := strconv.FormatInt(c.Tweets[len(c.Tweets)-1].Id-1, 10)
+			log.Printf("using max_id %s", m)
+			v["max_id"] = []string{m}
+		}
 		log.Printf("Fetching")
 		timeline, err := api.GetUserTimeline(v)
 		log.Printf("Retrieved %d tweets", len(timeline))
@@ -93,11 +96,14 @@ func (c *cache) fetchMore(user, consumerKey, consumerSecret, token, tokenSecret 
 		}
 		first = false
 		for _, tweet := range timeline {
-			t, err := tweet.CreatedAtTime()
-			if err != nil {
-				log.Fatalf("time: %v", err)
+			if _, ok := ids[tweet.Id]; !ok {
+				ids[tweet.Id] = struct{}{}
+				t, err := tweet.CreatedAtTime()
+				if err != nil {
+					log.Fatalf("time: %v", err)
+				}
+				c.Tweets = append(c.Tweets, Tweet{t, tweet.Id, tweet.Place.Name})
 			}
-			c.Tweets = append(c.Tweets, Tweet{t, tweet.Id, tweet.Place.Name})
 		}
 	}
 	return nil
