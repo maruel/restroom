@@ -15,6 +15,7 @@ import (
 	"os"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 	"unicode/utf8"
 
@@ -161,16 +162,36 @@ func mainImpl() error {
 	sort.Strings(places)
 	fmt.Printf("Processed %d tweets\n", len(c.Users[*user]))
 	fmt.Printf("Favorite hour in UTC:\n")
+	max := 1
+	barChar := "*"
+	barMaxLen := 10
+	for _, s := range hours {
+		if max < s {
+			max = s
+		}
+	}
 	for i, s := range hours {
-		fmt.Printf("  %2d: %3d\n", i, s)
+		fmt.Printf("  %2d: %3d %s\n", i, s, strings.Repeat(barChar, (barMaxLen*s+max/2)/max))
 	}
 	fmt.Printf("Favorite weekday in UTC:\n")
+	max = 1
+	for _, s := range weekdays {
+		if max < s {
+			max = s
+		}
+	}
 	for i, s := range weekdays {
-		fmt.Printf("  %9s: %3d\n", time.Weekday(i), s)
+		fmt.Printf("  %9s: %3d %s\n", time.Weekday(i), s, strings.Repeat(barChar, (barMaxLen*s+max/2)/max))
 	}
 	fmt.Printf("Favorite places:\n")
+	max = 1
 	for _, p := range places {
-		fmt.Printf("  %*s: %d\n", placesLen, p, placesMap[p])
+		if max < placesMap[p] {
+			max = placesMap[p]
+		}
+	}
+	for _, p := range places {
+		fmt.Printf("  %*s: %d %s\n", placesLen, p, placesMap[p], strings.Repeat(barChar, (barMaxLen*placesMap[p]+max/2)/max))
 	}
 	return nil
 }
